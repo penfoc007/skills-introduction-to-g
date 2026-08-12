@@ -35,3 +35,16 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Xcode / XcodeGen #
+####################
+# The .xcodeproj is generated from AppAccessToggle/project.yml via
+# `xcodegen generate` - it isn't committed, only the spec that produces it.
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+.build/
+.swiftpm/
+*.moved-aside
+*.xcuserstate

@@ -1,75 +1,70 @@
-<header>
+# Access Toggle
 
-<!--
-  <<< Author notes: Course header >>>
-  Include a 1280×640 image, course title in sentence case, and a concise description in emphasis.
-  In your repository settings: enable template repository, add your 1280×640 social image, auto delete head branches.
-  Add your open source license, GitHub uses MIT license.
--->
+_An iOS app that lets you flip a single switch to block or restore access to chosen apps on your iPhone._
 
-# Introduction to GitHub
+Access Toggle is a SwiftUI app built on Apple's Screen Time APIs (`FamilyControls`, `ManagedSettings`). You pick which apps or app categories to manage, then use one switch to shield them (they show the system "blocked" screen when opened) or restore normal access instantly.
 
-_Get started using GitHub in less than an hour._
+## How it works
 
-</header>
+| Framework | Role |
+|---|---|
+| `FamilyControls` | Requests the user's Screen Time consent (`AuthorizationCenter`) and provides the `familyActivityPicker` sheet used to choose apps/categories, without ever exposing their identities to this app's code. |
+| `ManagedSettings` | Applies or lifts the actual shield via `ManagedSettingsStore.shield`. |
+| `UserDefaults` | Persists your app/category selection and the current on/off state across launches. |
 
-<!--
-  <<< Author notes: Step 1 >>>
-  Choose 3-5 steps for your course.
-  The first step is always the hardest, so pick something easy!
-  Link to docs.github.com for further explanations.
-  Encourage users to open new tabs for steps!
--->
+Source layout:
 
-## Step 1: Create a branch
+```
+AppAccessToggle/
+  project.yml                     # XcodeGen project spec (source of truth for the Xcode project)
+  AppAccessToggle.entitlements    # com.apple.developer.family-controls
+  Sources/
+    AppAccessToggleApp.swift      # App entry point
+    ContentView.swift             # Status, permission flow, the on/off toggle, app picker
+    ScreenTimeManager.swift       # Authorization + shield logic
+    SelectionStore.swift          # Persistence for selection + toggle state
+  Resources/
+    Assets.xcassets/              # Placeholder AppIcon + AccentColor
+```
 
-_Welcome to "Introduction to GitHub"! :wave:_
+## Requirements
 
-**What is GitHub?**: GitHub is a collaboration platform that uses _[Git](https://docs.github.com/get-started/quickstart/github-glossary#git)_ for versioning. GitHub is a popular place to share and contribute to [open-source](https://docs.github.com/get-started/quickstart/github-glossary#open-source) software.
-<br>:tv: [Video: What is GitHub?](https://www.youtube.com/watch?v=pBy1zgt0XPc)
+- Xcode 15 or newer (Xcode 16 recommended), iOS 16 deployment target
+- **A physical iPhone.** The Screen Time APIs do not work in the iOS Simulator.
+- An Apple Developer Program membership (paid). The Family Controls entitlement isn't available to free/personal-team accounts.
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (recommended, not required): `brew install xcodegen`
 
-**What is a repository?**: A _[repository](https://docs.github.com/get-started/quickstart/github-glossary#repository)_ is a project containing files and folders. A repository tracks versions of files and folders. For more information, see "[About repositories](https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories)" from GitHub Docs.
+## Getting it into Xcode
 
-**What is a branch?**: A _[branch](https://docs.github.com/en/get-started/quickstart/github-glossary#branch)_ is a parallel version of your repository. By default, your repository has one branch named `main` and it is considered to be the definitive branch. Creating additional branches allows you to copy the `main` branch of your repository and safely make any changes without disrupting the main project. Many people use branches to work on specific features without affecting any other parts of the project.
+**Option A — XcodeGen (recommended):**
 
-Branches allow you to separate your work from the `main` branch. In other words, everyone's work is safe while you contribute. For more information, see "[About branches](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-branches)".
+```bash
+cd AppAccessToggle
+xcodegen generate
+open AppAccessToggle.xcodeproj
+```
 
-**What is a profile README?**: A _[profile README](https://docs.github.com/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme)_ is essentially an "About me" section on your GitHub profile where you can share information about yourself with the community on GitHub.com. GitHub shows your profile README at the top of your profile page. For more information, see "[Managing your profile README](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme)".
+**Option B — manual:** Create a new Xcode project (App, Interface: SwiftUI, Language: Swift), delete its generated `ContentView.swift`/`...App.swift`, then drag in this repo's `Sources/` files and `Resources/Assets.xcassets`. In **Signing & Capabilities**, click **+ Capability** and add **Family Controls** — Xcode creates and wires up the entitlement for you automatically.
 
-![profile-readme-example](/images/profile-readme-example.png)
+Either way, before building:
 
-### :keyboard: Activity: Your first branch
+1. Change `PRODUCT_BUNDLE_IDENTIFIER` (in `project.yml`, or the target's Signing & Capabilities tab) to an identifier you own — it's currently a placeholder (`com.yourcompany.appaccesstoggle`).
+2. Set your Team under Signing & Capabilities.
+3. Build and run on a real iPhone signed into a normal (non-supervised) Apple ID, and approve the Screen Time permission prompt on first launch.
 
-1. Open a new browser tab and navigate to your newly made repository. Then, work on the steps in your second tab while you read the instructions in this tab.
-2. Navigate to the **< > Code** tab in the header menu of your repository.
+## Taking it to the App Store
 
-   ![code-tab](/images/code-tab.png)
+Getting the capability into Xcode is enough for **development testing on your own device** — that part works immediately, no approval wait.
 
-3. Click on the **main** branch drop-down.
+Shipping to TestFlight or the App Store is a separate step: Apple must approve a **Family Controls (Distribution)** request for your bundle ID before a build using this entitlement can go out publicly.
 
-   ![main-branch-dropdown](/images/main-branch-dropdown.png)
+1. Submit the request at Apple's [Family Controls distribution request form](https://developer.apple.com/contact/request/family-controls-distribution), once per bundle ID. You'll need to describe a genuine parental-control or digital-wellbeing use case — Apple reviews these manually.
+2. Turnaround has been reported anywhere from about 4 business days to several weeks; budget time for this before a launch date. Check the [Apple Developer Forums' Family Controls tag](https://developer.apple.com/forums/tags/family-controls) if a request seems stuck.
+3. Once approved, enable **Family Controls** for your App ID under Identifiers in App Store Connect / the developer portal before archiving your submission build.
 
-4. In the field, name your branch `my-first-branch`. In this case, the name must be `my-first-branch` to trigger the course workflow.
-5. Click **Create branch: my-first-branch** to create your branch.
+## Things worth knowing
 
-   ![create-branch-button](/images/create-branch-button.png)
-
-   The branch will automatically switch to the one you have just created.
-   The **main** branch drop-down bar will reflect your new branch and display the new branch name.
-
-6. Wait about 20 seconds then refresh this page (the one you're following instructions from). [GitHub Actions](https://docs.github.com/en/actions) will automatically update to the next step.
-
-<footer>
-
-<!--
-  <<< Author notes: Footer >>>
-  Add a link to get support, GitHub status page, code of conduct, license link.
--->
-
----
-
-Get help: [Post in our discussion board](https://github.com/orgs/skills/discussions/categories/introduction-to-github) &bull; [Review the GitHub status page](https://www.githubstatus.com/)
-
-&copy; 2024 GitHub &bull; [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) &bull; [MIT License](https://gh.io/mit)
-
-</footer>
+- **App names are never exposed to this app's code, by design.** Screen Time deliberately keeps the identity of managed apps private from third-party code; `Label(token)` renders the system's own icon/name for a selected app without ever handing your code a bundle ID or string. That's expected behavior, not a bug.
+- **No real app icon is included.** `Resources/Assets.xcassets/AppIcon.appiconset` has an empty 1024×1024 slot — drop in real artwork before submitting.
+- **Manual toggle only, no scheduling.** This app blocks/allows access only when you flip the switch. If you want time-based auto-blocking (e.g. "block social apps after 10pm"), that needs a `DeviceActivityMonitor` app extension, which isn't included here.
+- `ScreenTimeManager.applyShieldState()` has one call — `.specific(_:except:)` on `ShieldSettings.ActivityCategoryPolicy` — flagged with a `NOTE:` comment to double check against your Xcode SDK version; Apple has adjusted this API's exact shape across iOS releases and this was written without a Mac/Xcode available to compile-check it.
